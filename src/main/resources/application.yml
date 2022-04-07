@@ -18,3 +18,13 @@ server:
 management:
   server:
     port: 3300
+
+resilience4j.circuitbreaker:
+  instances:
+    consul-client-provider:
+      failureRateThreshold: 50
+      minimumNumberOfCalls: 10
+      slidingWindowType: TIME_BASED
+      slidingWindowSize: 10
+      waitDurationInOpenState: 50s
+      permittedNumberOfCallsInHalfOpenState: 3

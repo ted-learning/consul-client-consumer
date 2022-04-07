@@ -1,6 +1,6 @@
 package com.example.consulclientconsumer.controller
 
-import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.cloud.client.circuitbreaker.ReactiveCircuitBreakerFactory
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -11,15 +11,20 @@ import reactor.core.publisher.Mono
 @RequestMapping("/")
 @RestController
 class TalkController(
-    @Autowired
-    val webClientBuilder: WebClient.Builder
+    private val webClientBuilder: WebClient.Builder,
+    private val reactiveCircuitBreakerFactory: ReactiveCircuitBreakerFactory<*, *>
 ) {
 
     @GetMapping("/talk")
     fun talk(): Mono<Map<String, String>> {
-        return webClientBuilder.build().get()
-            .uri("/hello")
-            .retrieve()
-            .bodyToMono()
+        return reactiveCircuitBreakerFactory.create("consul-client-provider")
+            .run(
+                webClientBuilder.build().get()
+                    .uri("/hello")
+                    .retrieve()
+                    .bodyToMono<Map<String, String>>()
+            ) {
+                Mono.just(mapOf("data" to "slow timeout"))
+            }
     }
 }
